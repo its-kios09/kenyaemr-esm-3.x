@@ -19,7 +19,7 @@ export const root = getAsyncLifecycle(() => import('./root.component'), options)
 
 export const faciityReferralsDashboardLink = getSyncLifecycle(
   createLeftPanelLink({
-    name: 'faciity-referrals',
+    name: 'facility-referrals',
     title: 'Facility referrals',
   }),
   options,
