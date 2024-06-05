@@ -4,7 +4,7 @@ import { AirlineManageGates, ApplicationVirtual } from '@carbon/react/icons';
 import { Button, Modal, DatePickerInput, DatePicker } from '@carbon/react';
 import { spaBasePath } from '../constants';
 import styles from './facility-referral-metrics-header.scss';
-import { navigate } from '@openmrs/esm-framework';
+import { ExtensionSlot, navigate } from '@openmrs/esm-framework';
 
 const MetricsHeader = () => {
   const { t } = useTranslation();
@@ -26,13 +26,17 @@ const MetricsHeader = () => {
           iconDescription={t('pullfacilityreferrals', 'Pull Facility Referrals')}>
           {t('pullfacilityreferrals', 'Pull Facility Referrals')}
         </Button>
-        <Button
-          kind="primary"
-          renderIcon={(props) => <AirlineManageGates size={18} {...props} />}
-          iconDescription={t('refer', 'Refer a Patient')}
-          onClick={navigateToDepartmentalScreen}>
-          {t('refer', 'Refer a Patient')}
-        </Button>
+        <ExtensionSlot
+          name="patient-search-button-slot"
+          state={{
+            buttonText: t('refer', 'Refer a Patient'),
+            overlayHeader: t('refer', 'Refer a Patient'),
+            buttonProps: {
+              kind: 'primary',
+              renderIcon: (props) => <AirlineManageGates size={32} {...props} />,
+            },
+          }}
+        />
       </div>
     </div>
   );
