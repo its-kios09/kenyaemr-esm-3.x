@@ -8,6 +8,8 @@ import {
   TextInput,
   Row,
   DatePicker,
+  MultiSelect,
+  Dropdown,
   ButtonSet,
   Button,
   DatePickerInput,
@@ -16,6 +18,9 @@ import styles from './claims-form.scss';
 
 const ClaimsForm: React.FC = () => {
   const { t } = useTranslation();
+
+  const dropdownItems = [{ id: 'select-a-visittype', label: 'Select a visit Type' }];
+  const dropdownItems_facility = [{ id: 'select-a-visittype', label: 'Select a visit Type' }];
 
   return (
     <Form className={styles.form}>
@@ -34,13 +39,12 @@ const ClaimsForm: React.FC = () => {
         <Row className={styles.facilityVisitRow}>
           <Column className={styles.facilityColumn}>
             <Layer className={styles.input}>
-              <DatePicker datePickerType="single">
+              <DatePicker datePickerType="single" className={styles.datePickerInput}>
                 <DatePickerInput
                   placeholder="mm/dd/yyyy"
                   labelText={t('treatmentstart', 'Treatment Start')}
                   id="date-picker-single-claims-1"
-                  size="xl"
-                  className={styles.datePickerInput}
+                  size="md"
                 />
               </DatePicker>
             </Layer>
@@ -52,8 +56,8 @@ const ClaimsForm: React.FC = () => {
                   placeholder="mm/dd/yyyy"
                   labelText={t('treatmentend', 'Treatment End')}
                   id="date-picker-single-claims-2"
-                  size="xl"
-                  className={styles.datePickerInput}
+                  size="md"
+                  // className={styles.datePickerInput}
                 />
               </DatePicker>
             </Layer>
@@ -62,21 +66,23 @@ const ClaimsForm: React.FC = () => {
         <Row className={styles.facilityVisitRow}>
           <Column className={styles.facilityColumn}>
             <Layer className={styles.input}>
-              <TextInput
+              <Dropdown
                 id="visitType"
-                invalidText="Required"
-                placeholder="Visit Type"
-                labelText={t('visitType', ' Visit Type')}
+                titleText={t('visitType', 'Visit Type')}
+                initialSelectedItem={dropdownItems[0]}
+                items={dropdownItems}
+                itemToString={(item) => (item ? item.label : '')}
               />
             </Layer>
           </Column>
           <Column className={styles.facilityColumn}>
             <Layer className={styles.input}>
-              <TextInput
-                id="facility"
-                invalidText="Required"
-                placeholder="Facility"
-                labelText={t('facility', 'Facility')}
+              <Dropdown
+                id="faciity"
+                titleText={t('facility', 'Facility')}
+                initialSelectedItem={dropdownItems_facility[0]}
+                items={dropdownItems_facility}
+                itemToString={(item) => (item ? item.label : '')}
               />
             </Layer>
           </Column>
@@ -105,11 +111,13 @@ const ClaimsForm: React.FC = () => {
         </Row>
         <Column>
           <Layer className={styles.input}>
-            <TextInput
+            <MultiSelect
+              label="Diagnosis"
               id="diagnosis"
-              invalidText="Required"
-              placeholder="Diagnosis"
-              labelText={t('diagnosis', 'Diagnosis')}
+              titleText="Diagnosis"
+              items={dropdownItems_facility}
+              itemToString={(item) => (item ? item.text : '')}
+              selectionFeedback="top-after-reopen"
             />
           </Layer>
         </Column>
