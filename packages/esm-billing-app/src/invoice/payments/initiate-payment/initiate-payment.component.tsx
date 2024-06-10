@@ -30,7 +30,6 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   const { mpesaCallbackUrl, passKey, shortCode, authorizationUrl, initiateUrl } = useConfig();
   const { mflCodeValue } = useSystemSetting('facility.mflcode');
   const [notification, setNotification] = useState<string | null>(null);
-
   const {
     control,
     handleSubmit,
