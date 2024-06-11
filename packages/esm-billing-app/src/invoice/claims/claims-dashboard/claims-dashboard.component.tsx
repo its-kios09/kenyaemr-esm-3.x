@@ -7,9 +7,11 @@ import styles from './claims-header/claims-header.scss';
 import { InlineLoading } from '@carbon/react';
 
 const ClaimScreen: React.FC = () => {
+  const { billUuid, patientUuid } = useParams();
   const { t } = useTranslation();
-  const { patientUuid, billUuid } = useParams<{ patientUuid: string; billUuid: string }>();
+
   const { patient, isLoading: isLoadingPatient, error } = usePatient(patientUuid);
+
   if (isLoadingPatient) {
     return (
       <div className={styles.invoiceContainer}>

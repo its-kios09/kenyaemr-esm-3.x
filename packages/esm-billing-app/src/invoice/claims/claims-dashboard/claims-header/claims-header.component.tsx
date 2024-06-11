@@ -15,7 +15,7 @@ const ClaimsHeader: React.FC<ClaimsHeaderProps> = ({ patient, billUuid }) => {
 
   return (
     <div className={styles.invoiceContainer}>
-      {patient && <ExtensionSlot name="patient-header-slot" state={{ patient, patientUuid: patient.id }} />}
+      {patient && <ExtensionSlot name="patient-header-slot" state={{ patientUuid: patient.id, patient }} />}
     </div>
   );
 };
