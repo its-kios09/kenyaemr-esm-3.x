@@ -29,7 +29,7 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
   const { t } = useTranslation();
   const { mpesaCallbackUrl, passKey, shortCode, authorizationUrl, initiateUrl } = useConfig();
   const { mflCodeValue } = useSystemSetting('facility.mflcode');
-  const [notification, setNotification] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'error' | 'success'; message: string } | null>(null);
 
   const {
     control,
@@ -88,9 +88,9 @@ const InitiatePaymentDialog: React.FC<InitiatePaymentDialogProps> = ({ closeModa
           <h4>{t('paymentPayment', 'Bill Payment')}</h4>
           {notification && (
             <InlineNotification
-              kind="error"
+              kind={notification.type}
               title={t('mpesaError', 'Mpesa Error')}
-              subtitle={notification}
+              subtitle={notification.message}
               onCloseButtonClick={() => setNotification(null)}
             />
           )}
