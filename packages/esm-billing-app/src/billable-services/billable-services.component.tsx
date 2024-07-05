@@ -13,6 +13,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  OverflowMenu,
+  OverflowMenuItem,
   Tile,
   Button,
 } from '@carbon/react';
@@ -95,7 +97,12 @@ const BillableServices = () => {
         serviceType: service?.serviceType?.display,
         status: service.serviceStatus,
         prices: '--',
-        actions: '--',
+        actions: (
+          <OverflowMenu>
+            <OverflowMenuItem itemText="Edit" />
+            <OverflowMenuItem itemText="Delete" hasDivider isDelete />
+          </OverflowMenu>
+        ),
       };
       let cost = '';
       service.servicePrices.forEach((price) => {
