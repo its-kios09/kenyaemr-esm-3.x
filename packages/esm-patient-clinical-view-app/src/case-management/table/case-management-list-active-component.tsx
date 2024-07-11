@@ -69,12 +69,7 @@ const CaseManagementListActive: React.FC<CaseManagementListActiveProps> = ({ set
       ),
       dateofstart: new Date(caseData.startDate).toLocaleDateString(),
       dateofend: caseData.endDate ? new Date(caseData.endDate).toLocaleDateString() : '-',
-      action: (
-        <OverflowMenu flipped={document?.dir === 'rtl'} aria-label="overflow-menu">
-          {/* <OverflowMenuItem itemText="Transfer Case" />
-          <OverflowMenuItem hasDivider isDelete itemText="End Relationship" /> */}
-        </OverflowMenu>
-      ),
+      action: <OverflowMenu flipped={document?.dir === 'rtl'} aria-label="overflow-menu"></OverflowMenu>,
     }));
 
   useEffect(() => {
