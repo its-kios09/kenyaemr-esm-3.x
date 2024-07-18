@@ -209,6 +209,17 @@
         {
       "name": "case-management-form",
       "component": "caseManagementForm"
+    },
+    {
+      "name": "case-mangement-chart-link",
+      "component": "caseMangementChart",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 14,
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-relationships-slot"
+      }
     }
   ],
   "modals": [
