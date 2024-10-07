@@ -1,5 +1,7 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import { z } from 'zod';
+import dayjs from 'dayjs';
+import { boolean, z } from 'zod';
+import { Peer, ReportingPeriod } from '../types';
 
 export const peerFormSchema = z
   .object({
@@ -34,4 +36,59 @@ export const createRelationship = (payload: z.infer<typeof peerFormSchema>) => {
       'Content-Type': 'application/json',
     },
   });
+};
+
+export function getAllMonthsInYear(monthFormart = 'MMMM'): { index: number; name: string }[] {
+  const months = [];
+  for (let month = 1; month <= 12; month++) {
+    const formattedMonth = dayjs(new Date(new Date().getFullYear(), month - 1)).format(monthFormart);
+    months.push({ index: month, name: formattedMonth });
+  }
+  return months;
+}
+
+export function getFirstAndLastDayOfMonth(month: number, year: number): { firstDay: Date; lastDay: Date } {
+  const firstDay = new Date(year, month - 1, 1);
+  const lastDay = new Date(year, month, 0);
+  return { firstDay, lastDay };
+}
+
+export function getYearsAroundCurrentYear(yearsToInclude: number = 10): number[] {
+  const currentYear = dayjs().year();
+  const years: number[] = [];
+
+  for (let i = currentYear - yearsToInclude; i <= currentYear + yearsToInclude; i++) {
+    years.push(i);
+  }
+
+  return years;
+}
+
+export const filterActivePeersWithDate = (peer: Peer, reportingPeriod: Partial<ReportingPeriod>): boolean => {
+  // If peer has no startDate, return false (invalid peer)
+  if (!peer.startDate) {
+    return false;
+  }
+
+  // Convert peer startDate and endDate to Date objects
+  const startDate = new Date(peer.startDate);
+  const endDate = peer.endDate ? new Date(peer.endDate) : undefined;
+
+  // Get current date if reporting period is incomplete
+  const timeStamp = new Date();
+  const { firstDay, lastDay } = getFirstAndLastDayOfMonth(
+    reportingPeriod?.month ?? timeStamp.getMonth() + 1, // Default to current month
+    reportingPeriod?.year ?? timeStamp.getFullYear(), // Default to current year
+  );
+
+  // Case 1: Peer has no end date, meaning they're still active
+  if (!endDate) {
+    return dayjs(startDate).isBefore(lastDay); // Peer started before the end of the reporting period
+  }
+
+  // Case 2: Peer has both start and end dates, check if within the reporting period
+  return (
+    dayjs(startDate).isBefore(lastDay) && // Peer started before the end of the reporting period
+    dayjs(endDate).isAfter(firstDay) // Peer has not expired before the start of the reporting period
+  );
 };

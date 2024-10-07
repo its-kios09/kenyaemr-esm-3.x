@@ -99,6 +99,23 @@ export interface Contact {
   age: number | null;
 }
 
+export interface Peer {
+  uuid: string;
+  name: string;
+  display: string;
+  relativeAge: number;
+  dead: boolean;
+  causeOfDeath: string;
+  relativeUuid: string;
+  relationshipType: string;
+  patientUuid: string;
+  gender: string;
+  contact: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  age: number | null;
+}
+
 export interface Person {
   uuid: string;
   age: number;
@@ -128,6 +145,7 @@ export interface Patient {
 export interface RelationShipType {
   uuid: string;
   displayAIsToB: string;
+  displayBIsToA: String;
 }
 
 export interface Enrollment {
@@ -205,3 +223,14 @@ export type MappedBedData = Array<{
   status: string;
   uuid: string;
 }>;
+
+export type ReportingPeriod = {
+  year: number;
+  month: number;
+};
+
+export interface Encounter {
+  uuid: string;
+  display: string;
+  encounterDatetime: string;
+}
