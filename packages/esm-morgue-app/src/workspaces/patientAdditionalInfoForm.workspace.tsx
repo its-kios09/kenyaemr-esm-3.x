@@ -72,7 +72,7 @@ const patientInfoSchema = z.object({
   policeName: z.string().optional(),
   policeIDNo: z.string().optional(),
   dischargeArea: z.string().optional(),
-  burialPermitNo: z.string().nonempty('Burial Permit is required'),
+  policeStation: z.string().optional(),
   visitType: z.string().uuid('invalid visit type'),
   availableCompartment: z.string(),
   services: z.array(z.string().uuid('invalid service')).nonempty('Must select one service'),
@@ -108,7 +108,7 @@ const PatientAdditionalInfoForm: React.FC<PatientAdditionalInfoFormProps> = ({ c
     tagNumberUuid,
     policeIDNumber,
     policeNameUuid,
-    burialPermitNumberUuid,
+    policeStationUuid,
     obNumberUuid,
     encounterProviderRoleUuid,
     dischargeAreaUuid,
@@ -132,7 +132,7 @@ const PatientAdditionalInfoForm: React.FC<PatientAdditionalInfoFormProps> = ({ c
       obNumber: '',
       policeName: '',
       policeIDNo: '',
-      burialPermitNo: '',
+      policeStation: '',
       visitType: morgueVisitTypeUuid,
       availableCompartment: '',
       paymentMethod: '',
@@ -195,8 +195,8 @@ const PatientAdditionalInfoForm: React.FC<PatientAdditionalInfoFormProps> = ({ c
     if (data.policeIDNo) {
       obs.push({ concept: policeIDNumber, value: data.policeIDNo });
     }
-    if (data.burialPermitNo) {
-      obs.push({ concept: burialPermitNumberUuid, value: data.burialPermitNo });
+    if (data.policeStation) {
+      obs.push({ concept: policeStationUuid, value: data.policeStation });
     }
     if (data.dischargeArea) {
       obs.push({ concept: dischargeAreaUuid, value: data.dischargeArea });
@@ -590,6 +590,23 @@ const PatientAdditionalInfoForm: React.FC<PatientAdditionalInfoFormProps> = ({ c
                 )}
               />
             </Column>
+            <Column>
+              <Controller
+                name="policeStation"
+                control={control}
+                render={({ field }) => (
+                  <TextInput
+                    {...field}
+                    id="policeStation"
+                    className={styles.formAdmissionDatepicker}
+                    placeholder={t('policeStation', 'Police station')}
+                    labelText={t('policeStation', 'Police station')}
+                    invalid={!!errors.policeStation}
+                    invalidText={errors.policeStation?.message}
+                  />
+                )}
+              />
+            </Column>
           </>
         )}
 
@@ -612,23 +629,6 @@ const PatientAdditionalInfoForm: React.FC<PatientAdditionalInfoFormProps> = ({ c
                 initialSelectedItems={field.value}
                 invalid={!!errors.availableCompartment}
                 invalidText={errors.availableCompartment?.message}
-              />
-            )}
-          />
-        </Column>
-        <Column>
-          <Controller
-            name="burialPermitNo"
-            control={control}
-            render={({ field }) => (
-              <TextInput
-                {...field}
-                id="burialPermitNo"
-                className={styles.formAdmissionDatepicker}
-                placeholder={t('burialPermitNo', 'Burial permit number')}
-                labelText={t('burialPermitNumber', 'Burial permit number')}
-                invalid={!!errors.burialPermitNo}
-                invalidText={errors.burialPermitNo?.message}
               />
             )}
           />
