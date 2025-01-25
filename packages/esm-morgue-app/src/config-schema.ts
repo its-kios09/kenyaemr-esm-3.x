@@ -21,7 +21,7 @@ export const configSchema = {
   morgueDepartmentServiceTypeUuid: {
     _type: Type.String,
     _description: ' UUID for morgue department service type',
-    _default: '030bb7ab-9aea-454a-aa17-96abf17727c7',
+    _default: '5b9e6cd1-f836-4144-91e4-401c58dd62af',
   },
   insurancepaymentModeUuid: {
     _type: Type.String,
@@ -36,7 +36,7 @@ export const configSchema = {
   tagNumberUuid: {
     _type: Type.String,
     _description: 'UUID for tag number concept',
-    _default: '13ba9c45-c540-4f10-b915-fa3d7baeb3d1',
+    _default: 'f2b35679-7ba9-4619-92cb-6872b0c6bf57',
   },
   morgueAdmissionEncounterType: {
     _type: Type.String,
@@ -56,17 +56,17 @@ export const configSchema = {
   obNumberUuid: {
     _type: Type.String,
     _description: 'UUID for ob number concept',
-    _default: 'c756d06a-22a5-4b66-933e-3d44667b72a0',
+    _default: '0dffecb3-2dc4-4d56-8cd4-56ba38579c69',
   },
   policeNameUuid: {
     _type: Type.String,
     _description: 'UUID for police name concept',
-    _default: '6d58d9b5-6f84-4e77-941e-f5cc86d18a60',
+    _default: 'd889f05b-0d9b-462f-ae8e-2e9be79fd954',
   },
   burialPermitNumberUuid: {
     _type: Type.String,
     _description: 'UUID for burial permit number concept',
-    _default: '29ef3df3-9845-49b0-96f2-5fb6d6240039',
+    _default: 'da524812-5600-4677-ba26-eb61eb925eef',
   },
   policeIDNumber: {
     _type: Type.String,
@@ -81,12 +81,37 @@ export const configSchema = {
   dischargeAreaUuid: {
     _type: Type.String,
     _description: 'UUID for discharge area concept',
-    _default: '734f9526-84db-4002-9d98-58da580e501f',
+    _default: '89ebccf1-4cca-4195-aeff-3e75fdf976b4',
   },
   adminUuid: {
     _type: Type.String,
     _description: 'UUID for admin user',
     _default: 'e02c40e5-04e7-11e5-ae3c-a0b3cc4f922f',
+  },
+  policeStationUuid: {
+    _type: Type.String,
+    _description: 'UUID for police station concept',
+    _default: '64f268d8-ed52-42bb-9591-52c1f3053ce0',
+  },
+  nextOfKinNamesAttributeUuid: {
+    _type: Type.String,
+    _description: 'UUID for next of kin names concept',
+    _default: '830bef6d-b01f-449d-9f8d-ac0fede8dbd3',
+  },
+  nextOfKinRelationshipAttributeUuid: {
+    _type: Type.String,
+    _description: 'UUID for next of kin relationship concept',
+    _default: 'd0aa9fd1-2ac5-45d8-9c5e-4317c622c8f5',
+  },
+  nextOfKinPhoneNumberAttributeUuid: {
+    _type: Type.String,
+    _description: 'UUID for next of kin phone number concept',
+    _default: '342a1d39-c541-4b29-8818-930916f4c2dc',
+  },
+  nextOfKinAddressAttributeUuid: {
+    _type: Type.String,
+    _description: 'UUID for next of kin address concept',
+    _default: '7cf22bec-d90a-46ad-9f48-035952261294',
   },
 };
 
@@ -133,4 +158,9 @@ export type ConfigObject = {
   dischargeAreaUuid: string;
   morgueDischargeEncounterTypeUuid: string;
   adminUuid: string;
+  policeStationUuid: string;
+  nextOfKinNamesAttributeUuid: string;
+  nextOfKinRelationshipAttributeUuid: string;
+  nextOfKinPhoneNumberAttributeUuid: string;
+  nextOfKinAddressAttributeUuid: string;
 };

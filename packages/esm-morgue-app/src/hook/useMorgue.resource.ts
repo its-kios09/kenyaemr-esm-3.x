@@ -190,7 +190,7 @@ export const useActiveMorgueVisit = (patientUuid: string) => {
 
   return { data: activeDeceased, error, isLoading };
 };
-const usePerson = (uuid: string) => {
+export const usePerson = (uuid: string) => {
   const customRepresentation = `custom:(uuid,display,gender,birthdate,dead,age,deathDate,causeOfDeath:(uuid,display))`;
   const url = `${restBaseUrl}/person/${uuid}?v=${customRepresentation}`;
   const { isLoading, error, data } = useSWR<FetchResponse<Patient['person']>>(url, openmrsFetch);
@@ -270,3 +270,35 @@ export function updateVisit(
     body: payload,
   });
 }
+
+export const updatePersonAttributes = (payload, personUuid: string, attributeUuid: string) => {
+  const url = `${restBaseUrl}/person/${personUuid}/attribute/${attributeUuid}`;
+  return openmrsFetch(url, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+};
+export const usePersonAttributes = async (personUuid: string) => {
+  const url = `${restBaseUrl}/person/${personUuid}/attribute`;
+  const response = await openmrsFetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  return response?.data?.results || [];
+};
+
+export const createPersonAttribute = (payload, personUuid: string) => {
+  const url = `${restBaseUrl}/person/${personUuid}/attribute`;
+  return openmrsFetch(url, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+};
