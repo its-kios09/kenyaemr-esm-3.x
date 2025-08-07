@@ -78,6 +78,24 @@ export const configSchema = {
     ],
     _description: 'List of identifier types with unique keys for each.',
   },
+  regulatorType: {
+    _type: Type.Array,
+    _elements: {
+      _type: Type.Object,
+      properties: {
+        key: { _type: Type.String },
+        name: { _type: Type.String },
+      },
+    },
+    _default: [
+      { key: 'Clinical Officers Council', name: 'Clinical Officers Council' },
+      { key: 'Pharmacy and Poisons Board', name: 'Pharmacy and Poisons Board' },
+      { key: 'Nursing Council', name: 'Nursing Council' },
+      { key: 'KMMPDC', name: 'Kenya Medical Practitioners and Dentists Council' },
+      { key: 'KMLTTB', name: 'Kenya Medical Laboratory Technicians and Technologists Board' },
+    ],
+    _description: 'List of identifier types with unique keys for each.',
+  },
 };
 
 export interface UserProperties {
