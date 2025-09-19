@@ -12,6 +12,7 @@ import {
   TextInput,
   TextInputSkeleton,
   ComboBox,
+  FileUploader,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { navigate, showSnackbar, toOmrsIsoString, useConfig, useSession } from '@openmrs/esm-framework';
@@ -39,6 +40,14 @@ type ClaimsFormProps = {
   selectedLineItems: LineItem[];
 };
 
+interface SupportingDocument {
+  name: string;
+  type: string;
+  size: number;
+  base64: string;
+  uploadedAt: string;
+}
+
 const ClaimsFormSchemaBase = z.object({
   claimExplanation: z.string(),
   claimJustification: z.string(),
@@ -50,6 +59,17 @@ const ClaimsFormSchemaBase = z.object({
   packages: z.array(z.string()),
   interventions: z.array(z.string()),
   provider: z.string(),
+  supportingDocuments: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        size: z.number(),
+        base64: z.string(),
+        uploadedAt: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 const ClaimsFormSchema = z.object({
@@ -63,6 +83,17 @@ const ClaimsFormSchema = z.object({
   packages: z.array(z.string()).min(1, { message: 'At least one package is required' }),
   interventions: z.array(z.string()).min(1, { message: 'At least one intervention is required' }),
   provider: z.string().min(1, { message: 'Provider is required' }),
+  supportingDocuments: z
+    .array(
+      z.object({
+        name: z.string(),
+        type: z.string(),
+        size: z.number(),
+        base64: z.string(),
+        uploadedAt: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
@@ -96,6 +127,11 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
   const [loading, setLoading] = useState(false);
   const [formInitialized, setFormInitialized] = useState(false);
   const [validationEnabled, setValidationEnabled] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<SupportingDocument[]>([]);
+  const [fileUploadError, setFileUploadError] = useState<string>('');
+
+  const supportedFileTypes = ['.jpg', '.jpeg', '.png', '.pdf', '.doc', '.docx', '.xls', '.xlsx'];
+  const maxFileSize = 5 * 1024 * 1024;
 
   const handleNavigateToBillingOptions = () =>
     navigate({
@@ -116,6 +152,7 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
       packages: [],
       interventions: [],
       provider: '',
+      supportingDocuments: [],
     },
   });
 
@@ -133,6 +170,112 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
   const interventions = watch('interventions');
   const claimExplanation = watch('claimExplanation');
   const claimJustification = watch('claimJustification');
+
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64String = result.split(',')[1];
+        resolve(base64String);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const validateFile = (file: File): string | null => {
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+
+    if (!supportedFileTypes.includes(fileExtension)) {
+      return `File type ${fileExtension} is not supported. Supported types: ${supportedFileTypes.join(', ')}`;
+    }
+
+    if (file.size > maxFileSize) {
+      return `File size exceeds the maximum limit of ${maxFileSize / (1024 * 1024)}MB`;
+    }
+
+    return null;
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setFileUploadError('');
+    const newFiles: SupportingDocument[] = [];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        const validationError = validateFile(file);
+        if (validationError) {
+          setFileUploadError(validationError);
+          continue;
+        }
+
+        const base64String = await convertFileToBase64(file);
+
+        const supportingDoc: SupportingDocument = {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          base64: base64String,
+          uploadedAt: new Date().toISOString(),
+        };
+
+        newFiles.push(supportingDoc);
+      }
+
+      const updatedFiles = [...uploadedFiles, ...newFiles];
+      setUploadedFiles(updatedFiles);
+      setValue('supportingDocuments', updatedFiles);
+
+      if (newFiles.length > 0) {
+        showSnackbar({
+          kind: 'success',
+          title: t('fileUploadSuccess', 'File Upload Success'),
+          subtitle: t('filesUploadedSuccessfully', `${newFiles.length} file(s) uploaded successfully`),
+          timeoutInMs: 3000,
+          isLowContrast: true,
+        });
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      setFileUploadError('Error uploading files. Please try again.');
+      showSnackbar({
+        kind: 'error',
+        title: t('fileUploadError', 'File Upload Error'),
+        subtitle: t('fileUploadFailed', 'Failed to upload files. Please try again.'),
+        timeoutInMs: 3000,
+        isLowContrast: true,
+      });
+    }
+  };
+
+  const handleFileDelete = (fileName: string) => {
+    const updatedFiles = uploadedFiles.filter((file) => file.name !== fileName);
+    setUploadedFiles(updatedFiles);
+    setValue('supportingDocuments', updatedFiles);
+    setFileUploadError('');
+  };
+
+  const handleFileUploaderDelete = (event: React.MouseEvent, fileData: any) => {
+    let fileName = '';
+
+    if (fileData?.name) {
+      fileName = fileData.name;
+    } else if (fileData?.filename) {
+      fileName = fileData.filename;
+    } else if (typeof fileData === 'string') {
+      fileName = fileData;
+    }
+
+    if (fileName) {
+      handleFileDelete(fileName);
+    }
+  };
 
   const debouncedValidation = useCallback(
     debounce(() => {
@@ -160,6 +303,7 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
         packages: packagesAndinterventions?.packages ?? [],
         interventions: packagesAndinterventions?.interventions ?? [],
         provider: providerUuid,
+        supportingDocuments: [],
       };
 
       Object.entries(updates).forEach(([field, value]) => {
@@ -227,7 +371,10 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
       billNumber: billUuid,
       packages: data.packages,
       interventions: data.interventions,
+      supportingDocuments: data.supportingDocuments || [], // Add supporting documents to payload
     };
+
+    console.log('Submitting claim with payload:', { payload });
 
     try {
       await processClaims(payload);
@@ -440,6 +587,70 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
             validationEnabled={validationEnabled}
             onInteraction={() => setValidationEnabled(true)}
           />
+
+          {/* Enhanced File Uploader Section */}
+          <Column>
+            <Layer className={styles.input}>
+              <FileUploader
+                accept={supportedFileTypes}
+                buttonKind="primary"
+                buttonLabel={t('addSupportingDocuments', 'Add Supporting Documents')}
+                filenameStatus="edit"
+                iconDescription={t('deleteFile', 'Delete file')}
+                labelDescription={t(
+                  'fileUploadDescription',
+                  `Max file size is ${maxFileSize / (1024 * 1024)}MB. Supported formats: ${supportedFileTypes.join(
+                    ', ',
+                  )}`,
+                )}
+                labelTitle={t('supportingDocuments', 'Supporting Documents')}
+                multiple
+                name="supportingDocuments"
+                onChange={handleFileUpload}
+                onDelete={handleFileUploaderDelete}
+                size="md"
+              />
+
+              {/* File Upload Error Display */}
+              {fileUploadError && (
+                <InlineNotification
+                  kind="error"
+                  title={t('fileUploadError', 'File Upload Error')}
+                  subtitle={fileUploadError}
+                  hideCloseButton={false}
+                  onCloseButtonClick={() => setFileUploadError('')}
+                  lowContrast
+                />
+              )}
+
+              {/* Display uploaded files */}
+              {uploadedFiles.length > 0 && (
+                <div style={{ marginTop: '1rem' }}>
+                  <h4>
+                    {t('uploadedFiles', 'Uploaded Files')} ({uploadedFiles.length})
+                  </h4>
+                  <ul>
+                    {uploadedFiles.map((file, index) => (
+                      <li key={index} style={{ marginBottom: '0.5rem' }}>
+                        <span>{file.name}</span>
+                        <span style={{ color: '#6f6f6f', marginLeft: '0.5rem' }}>
+                          ({(file.size / 1024).toFixed(2)} KB)
+                        </span>
+                        <Button
+                          kind="ghost"
+                          size="sm"
+                          onClick={() => handleFileDelete(file.name)}
+                          style={{ marginLeft: '0.5rem' }}>
+                          {t('remove', 'Remove')}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </Layer>
+          </Column>
+
           <ButtonSet className={styles.buttonSet}>
             <Button className={styles.button} kind="secondary" onClick={handleNavigateToBillingOptions}>
               {t('discardClaim', 'Discard Claim')}
