@@ -8,9 +8,27 @@
     {
       "component": "root",
       "route": "express-workflow"
+    },
+    {
+      "component": "queuesAdminHome",
+      "route": "queues-admin"
+    },
+    {
+      "component": "appointmentsDashboard",
+      "route": "appointments"
     }
   ],
   "extensions": [
+    {
+      "component": "appointmentsDashboardLink",
+      "name": "appointments-dashboard-link",
+      "slot": "appointments-left-panel-slot",
+      "meta": {
+        "name": "appointments",
+        "slot": "appointments-dashboard-slot",
+        "title": "Appointments"
+      }
+    },
     {
       "component": "admissionsLeftPanelLink",
       "name": "admissions-dashboard-link",
@@ -105,6 +123,11 @@
       "slot": "triage-dashboard-slot"
     },
     {
+            "name": "custom-visit-form-queue-fields",
+      "component": "checkinFormExtraExtension",
+      "slot":"visit-form-bottom-slot"
+    },
+    {
       "component": "reportsDashboardLink",
       "name": "reports-homepage-dashboard-link",
       "slot": "homepage-dashboard-slot",
@@ -134,6 +157,13 @@
       "name": "pharmacy-homepage-dashboard",
       "component": "pharmacy",
       "slot": "pharmacy-homepage-dashboard-slot",
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "ewf-pharmacy-orders-dashboard",
+      "component": "pharmacyOrders",
+      "slot": "ewf-orders-slot",
       "online": true,
       "offline": false
     },
@@ -235,7 +265,8 @@
         "hideDashboardTitle": true
       }
     },
-    {
+
+        {
       "name": "ewf-pharmacy-dashboard",
       "component": "pharmacyTabs",
       "slot": "ewf-patient-chart-pharmacy-dashboard-slot",
@@ -266,29 +297,24 @@
       "component": "homepageDashboardLink",
       "slot": "patient-chart-dashboard-slot",
       "order": 0
-    }, 
+    },
     {
-      "name": "mch-program-management",
-      "component": "mchProgramManagement",
-      "slot": "mch-program-management-slot",
-      "order": 0
+      "name": "ewf-encounter-details-dashboard",
+      "component": "encounterDetails",
+      "slot": "ewf-clinical-encounter-slot",
+      "online": true,
+      "offline": false
     }
   ],
-      
+
   "workspaces": [
     {
       "name": "express-workflow-workspace",
-      "component": "expressWorkflowWorkspace", 
+      "component": "expressWorkflowWorkspace",
       "title": "Express Workflow Workspace",
       "type": "workspace",
       "canMaximize": true,
       "canHide": true
-    },
-    {
-      "name": "mch-program-form-workspace",
-      "component": "mchProgramForm", 
-      "title": "Program Form",
-      "type": "workspace"
     }
   ],
   "modals": [

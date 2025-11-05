@@ -1,8 +1,10 @@
 {
   "administration": "አስተዳደር",
   "adrAssessment": "የኤዲአር ግምገማ",
+  "appointments": "Appointments",
   "bedManagement": "የአልጋ አስተዳደር",
-  "billing": "ክፍያ",
+  "billingAdmin": "Billing Admin",
+  "caseManagement": "Case Management",
   "clearCache": "መሸጎጫ አጽዳ",
   "clearSearch": "ፍለጋ አጽዳ",
   "crossBorder": "ድንበር ተሻጋሪ",
@@ -17,8 +19,10 @@
   "labManifestApp": "የላብራቶሪ ማኒፌስት መተግበሪያ",
   "legacyAdmin": "Legacy Admin",
   "manageStocks": "አክሲዮኖችን አስተዳድር",
+  "referrals": "ሪፈራሎች",
   "reports": "ሪፖርቶች",
   "search": "ሞጁል ፈልግ",
+  "serviceQueuesAdmin": "የመምሪያ ዘዴዎች አስተዳደር",
   "suppliesDispensing": "አቅርቦቶች ማከፋፈል",
   "systemInfo": "የስርዓት መረጃ"
 }

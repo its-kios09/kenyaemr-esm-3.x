@@ -36,6 +36,7 @@ import { usePhoneNumberAttribute } from '../../../hooks/usePhoneNumber';
 import { formatDateTime } from '../../utils';
 import styles from './claims-form.scss';
 import ClaimsSupportingDocumentsInput from './claims-supporting-documents-inputs.form';
+import { usePatientIdentifier } from '../../../hooks/usePatientIdentifierType';
 
 type ClaimsFormProps = {
   bill: MappedBill;
@@ -61,6 +62,7 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
   const { visitAttributeTypes } = useConfig<BillingConfig>();
   const { providers, providersLoading } = useProviderList();
   const { phoneNumber } = usePhoneNumberAttribute(patientUuid);
+  const { nationalId, isLoading: isLoadingNationalId, error: errorNationalId } = usePatientIdentifier(patientUuid);
 
   const [otpState, setOtpState] = useState<OTPState>(OTPState.NOT_STARTED);
   const [pendingClaimData, setPendingClaimData] = useState<z.infer<typeof ClaimsFormSchema> | null>(null);
@@ -70,6 +72,7 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
   const [currentOtpPhoneNumber, setCurrentOtpPhoneNumber] = useState<string>('');
 
   const currentPhoneRef = useRef<string>('');
+  const claimSummaryRef = useRef<ClaimSummary | null>(null);
 
   const patientName = `${bill.patientName}`;
   const otpExpiryMinutes = 5;
@@ -167,24 +170,28 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
     visitAttributeTypes,
   ]);
 
-  const generateClaimSummary = (data: z.infer<typeof ClaimsFormSchema>): ClaimSummary => {
-    const billServiceNames = selectedLineItems.map((item) => item.billableService);
-    const services = billServiceNames.map((service) => service.replace(/^[a-f0-9-]+:/, '').trim());
-    const totalAmount = selectedLineItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const generateClaimSummary = useCallback(
+    (data: z.infer<typeof ClaimsFormSchema>): ClaimSummary => {
+      const billServiceNames = selectedLineItems.map((item) => item.billableService);
+      const services = billServiceNames.map((service) => service.replace(/^[a-f0-9-]+:/, '').trim());
+      const totalAmount = selectedLineItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-    return {
-      totalAmount,
-      facility: recentVisit?.location?.display || '',
-      totalItems: selectedLineItems.length,
-      services: services.join(', '),
-      startDate: data.treatmentStart,
-      endDate: data.treatmentEnd,
-    };
-  };
+      return {
+        totalAmount,
+        facility: recentVisit?.location?.display || '',
+        totalItems: selectedLineItems.length,
+        services: services.join(', '),
+        startDate: data.treatmentStart,
+        endDate: data.treatmentEnd,
+      };
+    },
+    [recentVisit?.location?.display, selectedLineItems],
+  );
 
   const createDynamicOTPHandlers = useCallback(
-    (initialPhone: string) => {
+    (initialPhone: string, summary: ClaimSummary) => {
       currentPhoneRef.current = initialPhone;
+      claimSummaryRef.current = summary;
 
       return {
         onRequestOtp: async (phoneNumber: string): Promise<void> => {
@@ -195,13 +202,12 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
           setCurrentOtpPhoneNumber(phoneNumber);
           currentPhoneRef.current = phoneNumber;
 
-          const currentFormData = form.getValues();
-          if (!currentFormData || !selectedLineItems?.length) {
+          const currentSummary = claimSummaryRef.current;
+          if (!currentSummary) {
             throw new Error('No claim data available for OTP request');
           }
 
-          const claimSummary = generateClaimSummary(currentFormData);
-          await otpManager.requestOTP(phoneNumber, patientName, claimSummary, otpExpiryMinutes);
+          await otpManager.requestOTP(phoneNumber, patientName, currentSummary, otpExpiryMinutes, nationalId || null);
         },
         onVerify: async (otp: string): Promise<void> => {
           const phoneForVerification = currentPhoneRef.current;
@@ -217,7 +223,7 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
         },
       };
     },
-    [patientName, form, selectedLineItems, otpExpiryMinutes],
+    [patientName, otpExpiryMinutes, nationalId],
   );
 
   const launchOtpVerificationModal = (props: OTPVerificationModalOptions) => {
@@ -295,6 +301,7 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
       setPendingClaimData(null);
       setCurrentOtpPhoneNumber('');
       currentPhoneRef.current = '';
+      claimSummaryRef.current = null;
       otpManager.clearAllOTPs();
 
       setTimeout(() => {
@@ -336,12 +343,15 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
       return;
     }
 
+    const claimSummary = generateClaimSummary(data);
+
     setPendingClaimData(data);
     setOtpState(OTPState.REQUESTED);
     setCurrentOtpPhoneNumber(phoneNumber);
     currentPhoneRef.current = phoneNumber;
+    claimSummaryRef.current = claimSummary;
 
-    const dynamicHandlers = createDynamicOTPHandlers(phoneNumber);
+    const dynamicHandlers = createDynamicOTPHandlers(phoneNumber, claimSummary);
 
     setTimeout(() => {
       launchOtpVerificationModal({
@@ -363,12 +373,25 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
   };
 
   const handleReopenOTPModal = () => {
-    const dynamicHandlers = createDynamicOTPHandlers(phoneNumber);
+    const currentSummary = claimSummaryRef.current;
+    if (!currentSummary) {
+      showSnackbar({
+        kind: 'error',
+        title: t('claimError', 'Claim Error'),
+        subtitle: t('claimSummaryMissing', 'Claim summary is missing. Please try again.'),
+        timeoutInMs: 2500,
+        isLowContrast: false,
+      });
+      return;
+    }
+
+    const phoneToUse = currentOtpPhoneNumber || phoneNumber;
+    const dynamicHandlers = createDynamicOTPHandlers(phoneToUse, currentSummary);
 
     launchOtpVerificationModal({
       otpLength: 5,
       obscureText: false,
-      phoneNumber: currentOtpPhoneNumber || phoneNumber,
+      phoneNumber: phoneToUse,
       expiryMinutes: otpExpiryMinutes,
       onRequestOtp: dynamicHandlers.onRequestOtp,
       onVerify: dynamicHandlers.onVerify,
@@ -381,9 +404,10 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
     setPendingClaimData(null);
     setCurrentOtpPhoneNumber('');
     currentPhoneRef.current = '';
+    claimSummaryRef.current = null;
     otpManager.clearAllOTPs();
     navigate({
-      to: window.getOpenmrsSpaBase() + `home/billing/patient/${patientUuid}/${billUuid}`,
+      to: window.getOpenmrsSpaBase() + `home/accounting/patient/${patientUuid}/${billUuid}`,
     });
   };
 
@@ -445,6 +469,22 @@ const ClaimsForm: React.FC<ClaimsFormProps> = ({ bill, selectedLineItems }) => {
               subtitle={t(
                 'noPhoneNumberFound',
                 'No phone number found for this patient. OTP verification will not be available.',
+              )}
+              hideCloseButton={true}
+              lowContrast={true}
+              className={styles.notification}
+            />
+          </div>
+        )}
+
+        {!nationalId && !isLoadingNationalId && (
+          <div className={styles.notificationContainer}>
+            <InlineNotification
+              kind="warning"
+              title={t('noNationalId', 'No National ID')}
+              subtitle={t(
+                'noNationalIdFound',
+                'No national ID found for this patient. This may affect claim processing.',
               )}
               hideCloseButton={true}
               lowContrast={true}

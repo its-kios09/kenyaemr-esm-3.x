@@ -1,4 +1,4 @@
-import { type OpenmrsResource, type OpenmrsResourceStrict } from '@openmrs/esm-framework';
+import { type OpenmrsResource, type OpenmrsResourceStrict, type Visit } from '@openmrs/esm-framework';
 
 export interface DashboardConfig {
   name: string;
@@ -13,6 +13,7 @@ export type Queue = {
   service: OpenmrsResource;
   allowedPriorities: Array<OpenmrsResource>;
   allowedStatuses: Array<OpenmrsResource>;
+  queueRooms: Array<OpenmrsResource>;
 };
 
 export type QueueEntry = {
@@ -32,7 +33,7 @@ export type QueueEntry = {
       birthdate: string;
     };
   };
-  visit: OpenmrsResource;
+  visit: Visit;
   priority: OpenmrsResource & { name: OpenmrsResourceStrict };
   priorityComment: string | null;
   sortWeight: number;
@@ -68,3 +69,23 @@ export type QueueEntryFilters = {
 export * from './order/order';
 export * from './order/order-type';
 export * from './encounter';
+
+type EncountersWithMedicationRequestsResource = fhir.Encounter | fhir.MedicationRequest | fhir.MedicationDispense;
+
+export interface EncountersWithMedicationRequestsResponse {
+  resourceType: 'Bundle';
+  type: 'searchset';
+  total?: number;
+  link?: fhir.BundleLink[];
+  entry?: Array<{
+    fullUrl: string;
+    resource: EncountersWithMedicationRequestsResource;
+    search?: {
+      mode?: 'match' | 'include' | 'outcome';
+      score?: number;
+    };
+  }>;
+}
+
+// API actually returns an array of resources directly
+export type EncountersWithMedicationRequestsArray = Array<EncountersWithMedicationRequestsResource>;

@@ -3,7 +3,12 @@
   "backendDependencies": {
     "kenyaemr": "^19.0.0"
   },
-  "pages": [],
+  "pages": [
+  {
+    "component": "wrapComponent",
+    "route": "case-management"
+  }
+  ],
   "extensions": [
     {
       "name": "hiv-care-and-treatment-dashboard-link",
@@ -126,26 +131,6 @@
       }
     },
     {
-      "name": "in-patient-dashboard-link",
-      "component": "inPatientChartLink",
-      "order": 7,
-      "meta": {
-        "slot": "patient-chart-in-patient-dashboard-slot",
-        "path": "in-patient",
-        "layoutMode": "anchored",
-        "columns": 1,
-        "columnSpan": 1
-      }
-    },
-    {
-      "name": "in-patient-dashboard",
-      "slot": "patient-chart-in-patient-dashboard-slot",
-      "component": "inPatientChartDashboard",
-      "meta": {
-        "fullWidth": false
-      }
-    },
-    {
       "name": "wrap-component-view",
       "slot": "case-management-dashboard-slot",
       "component": "wrapComponent",
@@ -210,6 +195,14 @@
       "order": 0,
       "online": true,
       "offline": false
+    },
+    {
+      "name": "patient-complaints",
+      "slot": "ewf-patient-summary-slot",
+      "component": "patientComplaints",
+      "order": 0,
+      "online": true,
+      "offline": false
     }
   ],
   "modals": [
@@ -237,6 +230,12 @@
       "name": "case-management-form",
       "component": "caseManagementForm",
       "title": "Case Management Form",
+      "type": "form"
+    },
+    {
+      "name": "add-patient-case-form",
+      "component": "addPatientCaseForm",
+      "title": "Add patient case Form",
       "type": "form"
     },
     {

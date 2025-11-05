@@ -46,8 +46,8 @@ import {
 import UserManagementFormSchema from '../userManagementFormSchema';
 import { ChevronLeft, Query, ChevronRight } from '@carbon/react/icons';
 import { useSystemUserRoleConfigSetting } from '../../hook/useSystemRoleSetting';
-import { type PractitionerResponse, Provider, User } from '../../../types';
-import { searchHealthCareWork } from '../../hook/searchHealthCareWork';
+import { type CustomHIEPractitionerResponse, type PractitionerResponse, Provider, User } from '../../../types';
+import { searchHealthCareWork, HealthWorkerAdapter, NormalizedPractitioner } from '../../hook/healthWorkerAdapter';
 import { ROLE_CATEGORIES, SECTIONS, today } from '../../../constants';
 import { ConfigObject } from '../../../config-schema';
 import { mutate } from 'swr';
@@ -230,10 +230,6 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     providerUniqueIdentifier,
   ]);
 
-  function extractAttributeValue(attributes, prefix: string) {
-    return attributes?.find((attr) => attr.display.startsWith(prefix))?.display?.split(' ')[3] || '';
-  }
-
   const userFormMethods = useForm<UserFormSchema>({
     resolver: zodResolver(userManagementFormSchema),
     mode: 'all',
@@ -256,91 +252,48 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
     }
   }, [isDirty, promptBeforeClosing]);
 
+  const setPractitionerValuesFromNormalized = (normalized: NormalizedPractitioner) => {
+    setValue('givenName', normalized.firstName || '');
+    setValue('middleName', normalized.middleName || '');
+    setValue('familyName', normalized.lastName || '');
+    setValue('nationalId', normalized.nationalId || '');
+    setValue('providerLicense', normalized.licenseNumber || '');
+    setValue('registrationNumber', normalized.registrationId || '');
+    setValue('providerUniqueIdentifier', normalized.providerUniqueIdentifier || '');
+    setValue('phoneNumber', normalized.phoneNumber || '');
+    setValue('email', normalized.email || '');
+    setValue('qualification', normalized.qualification || '');
+    setValue('passportNumber', normalized.passportNumber || '');
+    setValue(
+      'licenseExpiryDate',
+      normalized.licenseEndDate ? parseDate(normalized.licenseEndDate) : parseDate(t('unknown', 'Unknown')),
+    );
+  };
+
   const handleSearch = async () => {
     try {
       setSearchHWR({ ...searchHWR, isHWRLoading: true });
-      const fetchedHealthWorker: PractitionerResponse = await searchHealthCareWork(
+      const unifiedResponse = await searchHealthCareWork(
         searchHWR.identifierType,
         searchHWR.identifier,
         searchHWR.regulator,
       );
-      if (!fetchedHealthWorker?.entry || fetchedHealthWorker.entry.length === 0) {
+
+      const normalizedData = HealthWorkerAdapter.normalize(unifiedResponse);
+
+      if (!normalizedData) {
         showModal('hwr-empty-modal', { errorCode: t('noResults', 'No results found') });
         return;
       }
 
       const dispose = showModal('hwr-confirmation-modal', {
-        healthWorker: fetchedHealthWorker,
+        healthWorker: unifiedResponse.data,
+        normalizedData: normalizedData,
+        fhirFormat: unifiedResponse.fhirFormat,
         onConfirm: () => {
           dispose();
-          const fullName = fetchedHealthWorker?.entry[0]?.resource?.name[0]?.text?.trim();
-
-          const nameParts = fullName.replace(/\s+/g, ' ').split(' ');
-
-          const hasTitle = nameParts[0].endsWith('.');
-          const nameWithoutTitle = hasTitle ? nameParts.slice(1) : nameParts;
-
-          const givenName = nameWithoutTitle[0] || '';
-          const familyName = nameWithoutTitle.length > 1 ? nameWithoutTitle[nameWithoutTitle.length - 1] : '';
-          const middleName = nameWithoutTitle.length > 2 ? nameWithoutTitle.slice(1, -1).join(' ') : '';
-          const healthWorkerPassPortNumber = fetchedHealthWorker?.link
-            ?.find(
-              (link: { relation: string; url: string }) =>
-                link.relation === 'self' && link.url.includes('identifierType=Passport'),
-            )
-            ?.url.split('identifierNumber=')[1]
-            ?.split('&')[0];
-
-          setValue('givenName', givenName);
-          setValue('middleName', middleName);
-          setValue('familyName', familyName);
-          setValue(
-            'nationalId',
-            fetchedHealthWorker?.entry[0]?.resource?.identifier?.find((id) =>
-              id.type?.coding?.some((code) => code.code === 'national-id'),
-            )?.value,
-          );
-          setValue(
-            'providerLicense',
-            fetchedHealthWorker?.entry[0]?.resource?.identifier?.find((id) =>
-              id.type?.coding?.some((code) => code.code === 'license-number'),
-            )?.value,
-          );
-          setValue(
-            'registrationNumber',
-            fetchedHealthWorker?.entry[0]?.resource?.identifier?.find((id) =>
-              id.type?.coding?.some((code) => code.code === 'board-registration-number'),
-            )?.value,
-          );
-          setValue(
-            'phoneNumber',
-            fetchedHealthWorker?.entry[0]?.resource?.telecom?.find((contact) => contact.system === 'phone')?.value ||
-              '',
-          );
-          setValue(
-            'qualification',
-            fetchedHealthWorker?.entry[0]?.resource?.qualification?.[0]?.code?.coding?.[0]?.display ||
-              fetchedHealthWorker?.entry[0]?.resource?.extension?.find(
-                (ext) => ext.url === 'https://ts.kenya-hie.health/Codesystem/specialty',
-              )?.valueCodeableConcept?.coding?.[0]?.display ||
-              '',
-          );
-          setValue(
-            'email',
-            fetchedHealthWorker?.entry[0]?.resource?.telecom?.find((contact) => contact.system === 'email')?.value ||
-              '',
-          );
-          setValue(
-            'licenseExpiryDate',
-            parseDate(
-              fetchedHealthWorker?.entry[0]?.resource?.identifier?.find((id) =>
-                id.type?.coding?.some((code) => code.code === 'license-number'),
-              )?.period?.end || t('unknown', 'Unknown'),
-            ),
-          );
-          setValue('passportNumber', healthWorkerPassPortNumber);
-          setValue('providerUniqueIdentifier', fetchedHealthWorker?.entry[0]?.resource?.id);
-          setHealthWorker(fetchedHealthWorker);
+          setPractitionerValuesFromNormalized(normalizedData);
+          setHealthWorker(unifiedResponse.data);
         },
       });
     } catch (error) {
@@ -349,6 +302,7 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
       setSearchHWR({ ...searchHWR, isHWRLoading: false });
     }
   };
+
   const onSubmit = async (data: UserFormSchema) => {
     const setProvider = data.providerIdentifiers;
     const editProvider = data.isEditProvider;
@@ -514,12 +468,6 @@ const ManageUserWorkspace: React.FC<ManageUserWorkspaceProps> = ({
       isLowContrast: true,
     });
   };
-
-  useEffect(() => {
-    if (isDirty) {
-      promptBeforeClosing(() => isDirty);
-    }
-  }, [isDirty, promptBeforeClosing]);
 
   const toggleSection = (section: string) => {
     setActiveSection((prev) => (prev !== section ? section : prev));

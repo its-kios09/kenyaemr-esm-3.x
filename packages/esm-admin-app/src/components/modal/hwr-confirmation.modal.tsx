@@ -3,7 +3,8 @@ import { ExtensionSlot } from '@openmrs/esm-framework';
 import capitalize from 'lodash-es/capitalize';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { type PractitionerResponse } from '../../types';
+import { CustomHIEPractitionerResponse, type PractitionerResponse } from '../../types';
+import { NormalizedPractitioner } from '../hook/healthWorkerAdapter';
 import styles from './hwr-confirmation.modal.scss';
 import { formatDateTime } from '../../utils/utils';
 
@@ -24,26 +25,21 @@ const HealthWorkerInfo: React.FC<HealthWorkerInfoProps> = ({ label, value }) => 
 interface HWRConfirmModalProps {
   onConfirm: () => void;
   close: () => void;
-  healthWorker: PractitionerResponse;
+  healthWorker: CustomHIEPractitionerResponse | PractitionerResponse;
+  normalizedData: NormalizedPractitioner;
+  fhirFormat: boolean;
 }
 
-const HWRConfirmModal: React.FC<HWRConfirmModalProps> = ({ close, onConfirm, healthWorker }) => {
+const HWRConfirmModal: React.FC<HWRConfirmModalProps> = ({
+  close,
+  onConfirm,
+  healthWorker,
+  normalizedData,
+  fhirFormat,
+}) => {
   const { t } = useTranslation();
-  const passportNumber = healthWorker?.link
-    ?.find(
-      (link: { relation: string; url: string }) =>
-        link.relation === 'self' && link.url.includes('identifierType=Passport'),
-    )
-    ?.url.split('identifierNumber=')[1]
-    ?.split('&')[0];
 
-  const practitioner = healthWorker?.entry?.[0]?.resource;
-
-  const licenseRenewalDate = practitioner?.identifier?.find((id) =>
-    id.type?.coding?.some((code) => code.code === 'license-number'),
-  )?.period?.end;
-
-  const isLicenseValid = licenseRenewalDate ? new Date(licenseRenewalDate) > new Date() : false;
+  const isLicenseValid = normalizedData.licenseEndDate ? new Date(normalizedData.licenseEndDate) > new Date() : false;
 
   return (
     <>
@@ -62,56 +58,93 @@ const HWRConfirmModal: React.FC<HWRConfirmModalProps> = ({ close, onConfirm, hea
             className={styles.healthWorkerPhoto}
             name="patient-photo-slot"
             state={{
-              patientName: practitioner?.name?.[0]?.text || '',
+              patientName: normalizedData.fullName || '',
             }}
           />
           <div style={{ width: '100%', marginLeft: '0.625rem' }}>
             <HealthWorkerInfo
               label={t('healthWorkerName', 'Health worker name')}
-              value={practitioner?.name?.[0]?.text}
+              value={normalizedData.fullName || '--'}
             />
+
             <HealthWorkerInfo
               label={t('providerUniqueIdentifier', 'Provider unique identifier')}
-              value={practitioner?.id}
+              value={normalizedData.providerUniqueIdentifier || '--'}
             />
-            {practitioner?.telecom?.map((telecom, index) => (
-              <HealthWorkerInfo key={index} label={capitalize(telecom?.system)} value={telecom?.value || '--'} />
-            ))}
 
-            {practitioner?.identifier?.map((identifier, index) => (
+            <HealthWorkerInfo
+              label={t('registrationId', 'Registration ID')}
+              value={normalizedData.registrationId || '--'}
+            />
+
+            <HealthWorkerInfo
+              label={t('externalReferenceId', 'External Reference ID')}
+              value={normalizedData.externalReferenceId || '--'}
+            />
+
+            <HealthWorkerInfo label={t('gender', 'Gender')} value={normalizedData.gender || '--'} />
+
+            <HealthWorkerInfo label={t('status', 'Status')} value={normalizedData.status || '--'} />
+
+            {normalizedData.phoneNumber && (
+              <HealthWorkerInfo label={t('phone', 'Phone')} value={normalizedData.phoneNumber} />
+            )}
+
+            {normalizedData.email && <HealthWorkerInfo label={t('email', 'Email')} value={normalizedData.email} />}
+
+            {normalizedData.nationalId && (
               <HealthWorkerInfo
-                key={index}
-                label={identifier.type?.coding?.map((code) => code.display).join(' ') || '--'}
-                value={identifier.value || '--'}
+                label={t('identificationNumber', 'Identification Number')}
+                value={normalizedData.nationalId}
               />
-            ))}
-
-            {passportNumber && (
-              <HealthWorkerInfo label={t('passportNumber', 'Passport Number')} value={passportNumber} />
             )}
 
             <HealthWorkerInfo
-              label={t('renewalDate', 'Renewal Date')}
-              value={formatDateTime(licenseRenewalDate) || '--'}
+              label={t('licensingBody', 'Licensing Body')}
+              value={normalizedData.licensingBody || '--'}
             />
 
-            <HealthWorkerInfo
-              label={t('licensingBody', 'Licensing Body')}
-              value={
-                practitioner?.qualification?.[0]?.extension?.find(
-                  (ext) => ext.url === 'https://hwr-kenyahie/StructureDefinition/licensing-body',
-                )?.valueCodeableConcept?.coding?.[0]?.display || '--'
-              }
-            />
-            <HealthWorkerInfo
-              label={t('qualification', 'Qualification')}
-              value={
-                practitioner?.qualification?.[0]?.code?.coding?.[0]?.display ||
-                practitioner?.extension?.find((ext) => ext.url === 'https://ts.kenya-hie.health/Codesystem/specialty')
-                  ?.valueCodeableConcept?.coding?.[0]?.display ||
-                '--'
-              }
-            />
+            <HealthWorkerInfo label={t('specialty', 'Specialty')} value={normalizedData.specialty || '--'} />
+
+            {normalizedData.professionalCadre && (
+              <HealthWorkerInfo
+                label={t('professionalCadre', 'Professional Cadre')}
+                value={normalizedData.professionalCadre}
+              />
+            )}
+
+            {normalizedData.practiceType && (
+              <HealthWorkerInfo label={t('practiceType', 'Practice Type')} value={normalizedData.practiceType} />
+            )}
+
+            {normalizedData.licenses && normalizedData.licenses.length > 0 && (
+              <>
+                <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
+                  <strong>{t('licenses', 'Licenses')}</strong>
+                </div>
+                {normalizedData.licenses.map((license, index) => (
+                  <div key={index} style={{ marginBottom: '0.5rem', paddingLeft: '1rem' }}>
+                    <HealthWorkerInfo
+                      label={`${license.license_type} ${t('license', 'License')}`}
+                      value={license.external_reference_id || '--'}
+                    />
+                    <HealthWorkerInfo
+                      label={t('validity', 'Validity')}
+                      value={`${formatDateTime(license.license_start)} - ${formatDateTime(license.license_end)}`}
+                    />
+                  </div>
+                ))}
+              </>
+            )}
+
+            {normalizedData.licenseStartDate && normalizedData.licenseEndDate && (
+              <HealthWorkerInfo
+                label={t('licenseValidity', 'License Validity Period')}
+                value={`${formatDateTime(normalizedData.licenseStartDate)} - ${formatDateTime(
+                  normalizedData.licenseEndDate,
+                )}`}
+              />
+            )}
 
             <HealthWorkerInfo
               label={t('licenseValid', 'License Validity')}

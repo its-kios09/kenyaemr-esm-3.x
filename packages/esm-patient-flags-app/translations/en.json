@@ -1,8 +1,10 @@
 {
   "administration": "Administration",
   "adrAssessment": "ADR Assessment",
+  "appointments": "Appointments",
   "bedManagement": "Bed Management",
-  "billing": "Billing",
+  "billingAdmin": "Billing Admin",
+  "caseManagement": "Case Management",
   "clearCache": "Clear Cache",
   "clearSearch": "Clear search",
   "crossBorder": "Cross Border",
@@ -17,8 +19,10 @@
   "labManifestApp": "Lab Manifest App",
   "legacyAdmin": "Legacy Admin",
   "manageStocks": "Manage Stocks",
+  "referrals": "Referrals",
   "reports": "Reports",
   "search": "Search for a module",
+  "serviceQueuesAdmin": "Service Queues Admin",
   "suppliesDispensing": "Supplies Dispensing",
   "systemInfo": "System Info"
 }

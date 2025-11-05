@@ -4,9 +4,9 @@ import { Button, Column, Search, ComboBox, InlineLoading } from '@carbon/react';
 import styles from './hwr-sync.modal.scss';
 import { useConfig, showSnackbar, formatDate, parseDate, showToast, restBaseUrl } from '@openmrs/esm-framework';
 import { mutate } from 'swr';
-import { type PractitionerResponse, type ProviderResponse } from '../../types';
+import { CustomHIEPractitionerResponse, type PractitionerResponse, type ProviderResponse } from '../../types';
 import { ConfigObject } from '../../config-schema';
-import { searchHealthCareWork } from '../hook/searchHealthCareWork';
+import { searchHealthCareWork, HealthWorkerAdapter } from '../hook/healthWorkerAdapter';
 import { createProviderAttribute, updateProviderAttributes } from './hwr-sync.resource';
 
 interface HWRSyncModalProps {
@@ -71,61 +71,43 @@ const HWRSyncModal: React.FC<HWRSyncModalProps> = ({ close, provider }) => {
   const handleSync = async () => {
     try {
       setSyncLoading(true);
-      const healthWorker: PractitionerResponse = await searchHealthCareWork(
+      const unifiedResponse = await searchHealthCareWork(
         searchHWR.identifierType,
         searchHWR.identifier,
         searchHWR.regulator,
       );
 
-      const resource = healthWorker.entry[0]?.resource;
+      const normalizedData = HealthWorkerAdapter.normalize(unifiedResponse);
 
-      const extractedAttributes = {
-        licenseNumber: resource?.identifier?.find((id) =>
-          id.type?.coding?.some((code) => code.code === 'license-number'),
-        )?.value,
-        regNumber: resource?.identifier?.find((id) =>
-          id.type?.coding?.some((code) => code.code === 'board-registration-number'),
-        )?.value,
-        licenseDate: formatDate(
-          new Date(
-            resource?.identifier?.find((id) =>
-              id.type?.coding?.some((code) => code.code === 'license-number'),
-            )?.period?.end,
-          ),
-        ),
-        phoneNumber: resource?.telecom?.find((contact) => contact.system === 'phone')?.value,
-        email: resource?.telecom?.find((contact) => contact.system === 'email')?.value,
-        qualification:
-          resource?.qualification?.[0]?.code?.coding?.[0]?.display ||
-          resource?.extension?.find((ext) => ext.url === 'https://ts.kenya-hie.health/Codesystem/specialty')
-            ?.valueCodeableConcept?.coding?.[0]?.display,
-        nationalId: resource?.identifier?.find((id) => id.type?.coding?.some((code) => code.code === 'national-id'))
-          ?.value,
-        providerUniqueIdentifier: resource?.id,
-      };
+      if (!normalizedData) {
+        throw new Error(t('noResults', 'No results found'));
+      }
 
       const updatableAttributes = [
-        { attributeType: licenseNumberUuid, value: extractedAttributes.licenseNumber },
-        { attributeType: licenseBodyUuid, value: extractedAttributes.regNumber },
-        { attributeType: licenseExpiryDateUuid, value: parseDate(extractedAttributes.licenseDate) },
-        { attributeType: phoneNumberUuid, value: extractedAttributes.phoneNumber },
-        { attributeType: qualificationUuid, value: extractedAttributes.qualification },
+        { attributeType: licenseNumberUuid, value: normalizedData.licenseNumber },
+        { attributeType: licenseBodyUuid, value: normalizedData.registrationId },
+        {
+          attributeType: licenseExpiryDateUuid,
+          value: normalizedData.licenseEndDate ? parseDate(normalizedData.licenseEndDate) : null,
+        },
+        { attributeType: phoneNumberUuid, value: normalizedData.phoneNumber },
+        { attributeType: qualificationUuid, value: normalizedData.qualification },
         {
           attributeType: providerHieFhirReference,
-          // Include regulator info in the health worker reference
           value: JSON.stringify({
-            ...healthWorker,
+            ...unifiedResponse.data,
+            fhirFormat: unifiedResponse.fhirFormat,
             searchParameters: {
               regulator: searchHWR.regulator,
               identifierType: searchHWR.identifierType,
             },
           }),
         },
-        { attributeType: providerAddressUuid, value: extractedAttributes.email },
-        { attributeType: providerNationalIdUuid, value: extractedAttributes.nationalId },
+        { attributeType: providerAddressUuid, value: normalizedData.email },
+        { attributeType: providerNationalIdUuid, value: normalizedData.nationalId },
         {
           attributeType: providerUniqueIdentifierAttributeTypeUuid,
-          value: extractedAttributes.providerUniqueIdentifier,
+          value: normalizedData.providerUniqueIdentifier,
         },
       ].filter((attr) => attr.value !== undefined && attr.value !== null && attr.value !== '');
 
